@@ -66,23 +66,29 @@ This is my Telegram app — everything I offer, all in one place. Inside, you ca
 
 Choose where you want to go next:`;
 
+// Telegram helpers
 async function sendTelegram(chatId, text, keyboard) {
   if (!BOT_TOKEN) {
     console.log("ERROR: TELEGRAM_BOT_TOKEN is missing");
     return;
   }
-  
+
   try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
-        text: text,
+        text,
         parse_mode: "Markdown",
-        reply_markup: keyboard,
-      }),
+        reply_markup: keyboard
+      })
     });
+
+    if (!resp.ok) {
+      const t = await resp.text();
+      console.log("Telegram sendMessage failed:", resp.status, t);
+    }
   } catch (err) {
     console.log("Send error:", err);
   }
@@ -90,12 +96,18 @@ async function sendTelegram(chatId, text, keyboard) {
 
 async function answerCallback(id) {
   if (!BOT_TOKEN) return;
+
   try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+    const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ callback_query_id: id }),
+      body: JSON.stringify({ callback_query_id: id })
     });
+
+    if (!resp.ok) {
+      const t = await resp.text();
+      console.log("Telegram answerCallbackQuery failed:", resp.status, t);
+    }
   } catch (err) {
     console.log("Callback error:", err);
   }
@@ -107,12 +119,13 @@ app.get("/health", (req, res) => res.status(200).send("ok"));
 
 // Webhook endpoint
 app.post("/webhook", (req, res) => {
+  // Respond immediately so Telegram doesn't retry
   res.sendStatus(200);
 
   (async () => {
     try {
       const { message, callback_query } = req.body;
-      console.log("Update received:", JSON.stringify(req.body).slice(0, 200));
+      console.log("Update received:", JSON.stringify(req.body).slice(0, 500));
 
       if (!BOT_TOKEN) {
         console.log("ERROR: TELEGRAM_BOT_TOKEN is missing in deployment env");
@@ -122,7 +135,7 @@ app.post("/webhook", (req, res) => {
       if (callback_query) {
         const chatId = callback_query.message.chat.id;
         const data = callback_query.data;
-        
+
         await answerCallback(callback_query.id);
 
         if (data === "menu_main") {
@@ -135,16 +148,25 @@ app.post("/webhook", (req, res) => {
           await sendTelegram(chatId, "CRYPTO PAYMENTS\n\nSelect a cryptocurrency:", cryptoMenu);
         } else if (cryptoAddresses[data]) {
           const c = cryptoAddresses[data];
-          await sendTelegram(chatId, `${c.name}\n\n\`${c.address}\`\n\nTap the address above to copy it.`, {
-            inline_keyboard: [
-              [{ text: "Back to Crypto", callback_data: "menu_crypto" }],
-              [{ text: "Main Menu", callback_data: "menu_main" }]
-            ]
-          });
+          await sendTelegram(
+            chatId,
+            `${c.name}\n\n\`${c.address}\`\n\nTap the address above to copy it.`,
+            {
+              inline_keyboard: [
+                [{ text: "Back to Crypto", callback_data: "menu_crypto" }],
+                [{ text: "Main Menu", callback_data: "menu_main" }]
+              ]
+            }
+          );
         }
-      } else if (message && message.text) {
+        return;
+      }
+
+      if (message && message.text) {
         const chatId = message.chat.id;
-        if (message.text === "/start" || message.text.toLowerCase() === "start") {
+        const text = message.text.trim().toLowerCase();
+
+        if (text === "/start" || text === "start") {
           await sendTelegram(chatId, welcomeText, mainMenu);
         }
       }
@@ -154,15 +176,10 @@ app.post("/webhook", (req, res) => {
   })();
 });
 
+// IMPORTANT: listen on Railway's PORT
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Listening on port:", PORT);
   console.log("TOKEN SET:", Boolean(process.env.TELEGRAM_BOT_TOKEN));
-});
-
-app.get("/", (req, res) => {
-  res.status(200).send("OK");
-});
-
 });
