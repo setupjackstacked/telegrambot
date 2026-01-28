@@ -155,7 +155,14 @@ app.post("/webhook", (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Listening on port:", PORT);
   console.log("TOKEN SET:", Boolean(process.env.TELEGRAM_BOT_TOKEN));
+});
+
+app.get("/", (req, res) => {
+  res.status(200).send("OK");
+});
+
 });
