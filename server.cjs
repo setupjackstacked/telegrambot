@@ -5,17 +5,26 @@ app.use(express.json());
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
+// ====== CONFIG HELPERS (prevents future mistakes) ======
+const WA_NUMBER = "447445328647";
+const wa = (msg) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+
 // Menus
 const mainMenu = {
   inline_keyboard: [
-    [{ text: "Premium Telegram Channel", url: "https://t.me/jackstackedpaybot" }],
+    // ✅ UPDATED: Premium Telegram Channel now points to jackstackedofficial
+    [{ text: "Premium Telegram Channel", url: "https://t.me/jackstackedofficial" }],
+
     [
       { text: "VIP OnlyFans", url: "https://onlyfans.com/hugeandhung" },
       { text: "Exclusive Bottom", url: "https://onlyfans.com/jackpowerbottom" }
     ],
     [{ text: "JustForFans", url: "https://justfor.fans/JackStacked" }],
     [{ text: "Meet Me", callback_data: "menu_meetme" }],
-    [{ text: "Book Video Call", url: "https://wa.me/447445328647?text=Book%20Video%20Call" }],
+
+    // ✅ WhatsApp links now generated from one source of truth
+    [{ text: "Book Video Call", url: wa("Book Video Call") }],
+
     [{ text: "Payments", callback_data: "menu_payments" }]
   ]
 };
@@ -23,7 +32,10 @@ const mainMenu = {
 const meetMenu = {
   inline_keyboard: [
     [{ text: "Rentmen", url: "https://rentmen.eu/JackStacked" }],
-    [{ text: "Make a Booking", url: "https://wa.me/447445328647?text=Telegram%20Booking%20Enquiry" }],
+
+    // ✅ WhatsApp correct wa.me format for +447445328647
+    [{ text: "Make a Booking", url: wa("Telegram Booking Enquiry") }],
+
     [{ text: "Deposits - See Payments", callback_data: "menu_payments" }],
     [{ text: "Back to Main Menu", callback_data: "menu_main" }]
   ]
