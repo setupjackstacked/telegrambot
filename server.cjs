@@ -9,11 +9,21 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const WA_NUMBER = "447445328647";
 const wa = (msg) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 
+// ====== NEW: Telegram Channels submenu ======
+const telegramChannelsMenu = {
+  inline_keyboard: [
+    [{ text: "SFW Channel", url: "https://t.me/jackstackedupdates" }],
+    [{ text: "NSFW Channel", url: "https://t.me/jackstackedofficial" }],
+    [{ text: "Coaching Channel", url: "https://t.me/jackedstackedcoaching" }],
+    [{ text: "Back to Main Menu", callback_data: "menu_main" }]
+  ]
+};
+
 // Menus
 const mainMenu = {
   inline_keyboard: [
-    // ✅ UPDATED: Premium Telegram Channel now points to jackstackedofficial
-    [{ text: "Premium Telegram Channel", url: "https://t.me/jackstackedofficial" }],
+    // ✅ UPDATED: Top button is now a submenu opener
+    [{ text: "Telegram Channel", callback_data: "menu_telegram_channels" }],
 
     [
       { text: "VIP OnlyFans", url: "https://onlyfans.com/hugeandhung" },
@@ -152,6 +162,11 @@ app.post("/webhook", (req, res) => {
 
         if (data === "menu_main") {
           await sendTelegram(chatId, welcomeText, mainMenu);
+
+        // ✅ NEW: Telegram Channel submenu
+        } else if (data === "menu_telegram_channels") {
+          await sendTelegram(chatId, "TELEGRAM CHANNELS\n\nChoose a channel below:", telegramChannelsMenu);
+
         } else if (data === "menu_meetme") {
           await sendTelegram(chatId, "MEET ME\n\nChoose an option below:", meetMenu);
         } else if (data === "menu_payments") {
