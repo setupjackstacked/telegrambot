@@ -5,9 +5,17 @@ app.use(express.json());
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
+// ✅ NEW: Admin chat id (your personal Telegram user id) for forwarding paid requests
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
+
 // ====== CONFIG HELPERS (prevents future mistakes) ======
 const WA_NUMBER = "447445328647";
 const wa = (msg) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+
+// ====== Tribute links (provided) ======
+const TRIBUTE_CREATOR_PAGE_URL = "https://t.me/tribute/app?startapp=esF";
+const TRIBUTE_CUSTOM_URL = "https://t.me/tribute/app?startapp=pqJV";
+const TRIBUTE_VIDEO_CALL_URL = "https://t.me/tribute/app?startapp=pqJS";
 
 // ====== NEW: Telegram Channels submenu ======
 const telegramChannelsMenu = {
@@ -19,10 +27,37 @@ const telegramChannelsMenu = {
   ]
 };
 
+// ====== NEW: Video Calls & Custom Videos submenu (Tribute) ======
+const bookingMenu = {
+  inline_keyboard: [
+    [{ text: "💳 Pay: Video Call", url: TRIBUTE_VIDEO_CALL_URL }],
+    [{ text: "💳 Pay: Custom", url: TRIBUTE_CUSTOM_URL }],
+    [{ text: "✅ I’ve paid (send details)", callback_data: "paid_start" }],
+    [{ text: "Back to Main Menu", callback_data: "menu_main" }]
+  ]
+};
+
+const paidTypeMenu = {
+  inline_keyboard: [
+    [{ text: "📞 Video Call", callback_data: "paid_type_videocall" }],
+    [{ text: "🎥 Custom Video", callback_data: "paid_type_custom" }],
+    [{ text: "⬅️ Back", callback_data: "menu_booking" }]
+  ]
+};
+
+// ====== Simple in-memory state for the paid flow ======
+const userState = new Map(); // chatId -> { step, data }
+const setState = (chatId, s) => userState.set(String(chatId), s);
+const getState = (chatId) => userState.get(String(chatId));
+const clearState = (chatId) => userState.delete(String(chatId));
+
 // Menus
 const mainMenu = {
   inline_keyboard: [
-    // ✅ UPDATED: Top button is now a submenu opener
+    // ✅ NEW: Top menu link to Tribute Creator Page
+    [{ text: "⭐ My Creator Page (Tribute)", url: TRIBUTE_CREATOR_PAGE_URL }],
+
+    // ✅ Existing: Telegram Channels submenu opener
     [{ text: "Telegram Channel", callback_data: "menu_telegram_channels" }],
 
     [
@@ -30,10 +65,12 @@ const mainMenu = {
       { text: "Exclusive Bottom", url: "https://onlyfans.com/jackpowerbottom" }
     ],
     [{ text: "JustForFans", url: "https://justfor.fans/JackStacked" }],
-    [{ text: "Meet Me", callback_data: "menu_meetme" }],
 
-    // ✅ WhatsApp links now generated from one source of truth
-    [{ text: "Book Video Call", url: wa("Book Video Call") }],
+    // ✅ NEW: Booking submenu opener (replaces WhatsApp video-call route)
+    [{ text: "Video Calls & Custom Videos", callback_data: "menu_booking" }],
+
+    // ✅ Keep meets going to WhatsApp via Meet Me submenu (unchanged)
+    [{ text: "Meet Me", callback_data: "menu_meetme" }],
 
     [{ text: "Payments", callback_data: "menu_payments" }]
   ]
@@ -43,7 +80,7 @@ const meetMenu = {
   inline_keyboard: [
     [{ text: "Rentmen", url: "https://rentmen.eu/JackStacked" }],
 
-    // ✅ WhatsApp correct wa.me format for +447445328647
+    // ✅ WhatsApp correct wa.me format for +447445328647 (meets only)
     [{ text: "Make a Booking", url: wa("Telegram Booking Enquiry") }],
 
     [{ text: "Deposits - See Payments", callback_data: "menu_payments" }],
@@ -96,15 +133,19 @@ async function sendTelegram(chatId, text, keyboard) {
   }
 
   try {
+    const payload = {
+      chat_id: chatId,
+      text,
+      parse_mode: "Markdown",
+      disable_web_page_preview: true
+    };
+
+    if (keyboard) payload.reply_markup = keyboard;
+
     const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: "Markdown",
-        reply_markup: keyboard
-      })
+      body: JSON.stringify(payload)
     });
 
     if (!resp.ok) {
@@ -113,6 +154,29 @@ async function sendTelegram(chatId, text, keyboard) {
     }
   } catch (err) {
     console.log("Send error:", err);
+  }
+}
+
+async function sendPhoto(chatId, fileId, caption) {
+  if (!BOT_TOKEN) return;
+
+  try {
+    const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        photo: fileId,
+        caption
+      })
+    });
+
+    if (!resp.ok) {
+      const t = await resp.text();
+      console.log("Telegram sendPhoto failed:", resp.status, t);
+    }
+  } catch (err) {
+    console.log("sendPhoto error:", err);
   }
 }
 
@@ -154,6 +218,7 @@ app.post("/webhook", (req, res) => {
         return;
       }
 
+      // ===== CALLBACKS =====
       if (callback_query) {
         const chatId = callback_query.message.chat.id;
         const data = callback_query.data;
@@ -161,19 +226,39 @@ app.post("/webhook", (req, res) => {
         await answerCallback(callback_query.id);
 
         if (data === "menu_main") {
+          clearState(chatId);
           await sendTelegram(chatId, welcomeText, mainMenu);
 
-        // ✅ NEW: Telegram Channel submenu
         } else if (data === "menu_telegram_channels") {
+          clearState(chatId);
           await sendTelegram(chatId, "TELEGRAM CHANNELS\n\nChoose a channel below:", telegramChannelsMenu);
 
+        } else if (data === "menu_booking") {
+          clearState(chatId);
+          await sendTelegram(
+            chatId,
+            "VIDEO CALLS & CUSTOM VIDEOS\n\n1) Pay on Tribute\n2) Come back here\n3) Tap ✅ *I’ve paid* and send details\n\n(WhatsApp is for meets only.)",
+            bookingMenu
+          );
+
         } else if (data === "menu_meetme") {
-          await sendTelegram(chatId, "MEET ME\n\nChoose an option below:", meetMenu);
+          clearState(chatId);
+          await sendTelegram(
+            chatId,
+            "MEET ME\n\nChoose an option below:",
+            meetMenu
+          );
+
         } else if (data === "menu_payments") {
+          clearState(chatId);
           await sendTelegram(chatId, "PAYMENTS\n\nChoose your payment method:", paymentsMenu);
+
         } else if (data === "menu_crypto") {
+          clearState(chatId);
           await sendTelegram(chatId, "CRYPTO PAYMENTS\n\nSelect a cryptocurrency:", cryptoMenu);
+
         } else if (cryptoAddresses[data]) {
+          clearState(chatId);
           const c = cryptoAddresses[data];
           await sendTelegram(
             chatId,
@@ -185,16 +270,101 @@ app.post("/webhook", (req, res) => {
               ]
             }
           );
+
+        // ===== PAID FLOW =====
+        } else if (data === "paid_start") {
+          setState(chatId, { step: "choose_type", data: {} });
+          await sendTelegram(chatId, "What did you pay for?", paidTypeMenu);
+
+        } else if (data === "paid_type_videocall" || data === "paid_type_custom") {
+          const type = data === "paid_type_videocall" ? "Video Call" : "Custom Video";
+          setState(chatId, { step: "ask_details", data: { type } });
+
+          const prompt =
+            type === "Video Call"
+              ? "Send in *ONE message*:\n\n• Preferred date/time + timezone\n• Any requests/limits\n\nThen send a screenshot of the Tribute confirmation, or type `skip`."
+              : "Send in *ONE message*:\n\n• What you want (clear scenario)\n• Length/style\n• Any requests/limits\n• Deadline (if any)\n\nThen send a screenshot of the Tribute confirmation, or type `skip`.";
+
+          await sendTelegram(chatId, `Got it: *${type}*.\n\n${prompt}`);
+
+        } else {
+          // Unknown callback — do nothing
         }
+
         return;
       }
 
-      if (message && message.text) {
+      // ===== MESSAGES =====
+      if (message) {
         const chatId = message.chat.id;
-        const text = message.text.trim().toLowerCase();
 
-        if (text === "/start" || text === "start") {
-          await sendTelegram(chatId, welcomeText, mainMenu);
+        // /start
+        if (message.text) {
+          const text = message.text.trim().toLowerCase();
+
+          if (text === "/start" || text === "start") {
+            clearState(chatId);
+            await sendTelegram(chatId, welcomeText, mainMenu);
+            return;
+          }
+        }
+
+        const st = getState(chatId);
+        if (!st) return;
+
+        // Step: ask_details (expects text)
+        if (st.step === "ask_details") {
+          if (!message.text) {
+            await sendTelegram(chatId, "Please send the details as text in one message.");
+            return;
+          }
+
+          st.data.details = message.text.trim();
+          st.step = "await_proof";
+          setState(chatId, st);
+
+          await sendTelegram(chatId, "Nice. Now send the payment screenshot, or type `skip`.");
+          return;
+        }
+
+        // Step: await_proof (accept photo OR "skip")
+        if (st.step === "await_proof") {
+          const hasPhoto = Array.isArray(message.photo) && message.photo.length > 0;
+          const isSkip =
+            message.text && typeof message.text === "string" && message.text.trim().toLowerCase() === "skip";
+
+          if (!hasPhoto && !isSkip) {
+            await sendTelegram(chatId, "Send a screenshot photo, or type `skip`.");
+            return;
+          }
+
+          const username = message.from && message.from.username ? `@${message.from.username}` : "(no username)";
+          const summary =
+            `✅ *BOOKING PAID*\n` +
+            `User: ${username}\n` +
+            `Chat ID: \`${chatId}\`\n` +
+            `Type: *${st.data.type}*\n\n` +
+            `Details:\n${st.data.details || "n/a"}\n\n` +
+            `Proof: ${hasPhoto ? "✅ Screenshot attached" : "⏭️ Skipped"}`;
+
+          if (ADMIN_CHAT_ID) {
+            await sendTelegram(ADMIN_CHAT_ID, summary);
+
+            if (hasPhoto) {
+              const best = message.photo[message.photo.length - 1];
+              await sendPhoto(
+                ADMIN_CHAT_ID,
+                best.file_id,
+                `Payment proof from ${username} (Chat ID: ${chatId})`
+              );
+            }
+          } else {
+            console.log("WARNING: ADMIN_CHAT_ID not set; cannot forward paid request.");
+          }
+
+          clearState(chatId);
+          await sendTelegram(chatId, "Perfect ✅ I’ve got everything. I’ll confirm with you here on Telegram shortly.", mainMenu);
+          return;
         }
       }
     } catch (err) {
@@ -209,4 +379,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Listening on port:", PORT);
   console.log("TOKEN SET:", Boolean(process.env.TELEGRAM_BOT_TOKEN));
+  console.log("ADMIN_CHAT_ID SET:", Boolean(process.env.ADMIN_CHAT_ID));
 });
