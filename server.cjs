@@ -5,7 +5,7 @@ app.use(express.json());
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
-// ✅ NEW: Admin chat id (your personal Telegram user id) for forwarding paid requests
+// ✅ Admin chat id (your personal Telegram user id) for forwarding paid requests
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 
 // ====== CONFIG HELPERS (prevents future mistakes) ======
@@ -13,11 +13,14 @@ const WA_NUMBER = "447445328647";
 const wa = (msg) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 
 // ====== Tribute links (provided) ======
-const TRIBUTE_CREATOR_PAGE_URL = "https://t.me/tribute/app?startapp=esF";
+const TRIBUTE_CREATOR_PAGE_URL = "https://t.me/tribute/app?startapp=esF"; // kept for reference, not in menu now
 const TRIBUTE_CUSTOM_URL = "https://t.me/tribute/app?startapp=pqJV";
 const TRIBUTE_VIDEO_CALL_URL = "https://t.me/tribute/app?startapp=pqJS";
 
-// ====== NEW: Telegram Channels submenu ======
+// ✅ NEW: Full XXX Access (top menu)
+const TRIBUTE_FULL_XXX_ACCESS_URL = "https://t.me/tribute/app?startapp=prYo";
+
+// ====== Telegram Channels submenu ======
 const telegramChannelsMenu = {
   inline_keyboard: [
     [{ text: "SFW Channel", url: "https://t.me/jackstackedupdates" }],
@@ -27,7 +30,7 @@ const telegramChannelsMenu = {
   ]
 };
 
-// ====== NEW: Video Calls & Custom Videos submenu (Tribute) ======
+// ====== Video Calls & Custom Videos submenu (Tribute) ======
 const bookingMenu = {
   inline_keyboard: [
     [{ text: "💳 Pay: Video Call", url: TRIBUTE_VIDEO_CALL_URL }],
@@ -54,11 +57,11 @@ const clearState = (chatId) => userState.delete(String(chatId));
 // Menus
 const mainMenu = {
   inline_keyboard: [
-    // ✅ NEW: Top menu link to Tribute Creator Page
-    [{ text: "⭐ My Creator Page (Tribute)", url: TRIBUTE_CREATOR_PAGE_URL }],
+    // ✅ NEW TOP BUTTON: Full XXX Access
+    [{ text: "🔥 Full XXX Access", url: TRIBUTE_FULL_XXX_ACCESS_URL }],
 
-    // ✅ Existing: Telegram Channels submenu opener
-    [{ text: "Telegram Channel", callback_data: "menu_telegram_channels" }],
+    // ✅ Telegram Channels submenu opener
+    [{ text: "Telegram Channels", callback_data: "menu_telegram_channels" }],
 
     [
       { text: "VIP OnlyFans", url: "https://onlyfans.com/hugeandhung" },
@@ -66,10 +69,10 @@ const mainMenu = {
     ],
     [{ text: "JustForFans", url: "https://justfor.fans/JackStacked" }],
 
-    // ✅ NEW: Booking submenu opener (replaces WhatsApp video-call route)
+    // ✅ Booking submenu opener (Tribute)
     [{ text: "Video Calls & Custom Videos", callback_data: "menu_booking" }],
 
-    // ✅ Keep meets going to WhatsApp via Meet Me submenu (unchanged)
+    // ✅ Meets go to WhatsApp via Meet Me submenu
     [{ text: "Meet Me", callback_data: "menu_meetme" }],
 
     [{ text: "Payments", callback_data: "menu_payments" }]
@@ -231,7 +234,15 @@ app.post("/webhook", (req, res) => {
 
         } else if (data === "menu_telegram_channels") {
           clearState(chatId);
-          await sendTelegram(chatId, "TELEGRAM CHANNELS\n\nChoose a channel below:", telegramChannelsMenu);
+          await sendTelegram(
+            chatId,
+            "TELEGRAM CHANNELS\n\n" +
+              "Join either channel below.\n\n" +
+              "✅ Premium *Paid* Channel (ALL content) can be joined from inside *either* the SFW or NSFW channel.\n" +
+              "Once you’re in, follow the pinned instructions to upgrade.\n\n" +
+              "Choose a channel:",
+            telegramChannelsMenu
+          );
 
         } else if (data === "menu_booking") {
           clearState(chatId);
@@ -243,11 +254,7 @@ app.post("/webhook", (req, res) => {
 
         } else if (data === "menu_meetme") {
           clearState(chatId);
-          await sendTelegram(
-            chatId,
-            "MEET ME\n\nChoose an option below:",
-            meetMenu
-          );
+          await sendTelegram(chatId, "MEET ME\n\nChoose an option below:", meetMenu);
 
         } else if (data === "menu_payments") {
           clearState(chatId);
@@ -271,7 +278,7 @@ app.post("/webhook", (req, res) => {
             }
           );
 
-        // ===== PAID FLOW =====
+          // ===== PAID FLOW =====
         } else if (data === "paid_start") {
           setState(chatId, { step: "choose_type", data: {} });
           await sendTelegram(chatId, "What did you pay for?", paidTypeMenu);
@@ -352,18 +359,18 @@ app.post("/webhook", (req, res) => {
 
             if (hasPhoto) {
               const best = message.photo[message.photo.length - 1];
-              await sendPhoto(
-                ADMIN_CHAT_ID,
-                best.file_id,
-                `Payment proof from ${username} (Chat ID: ${chatId})`
-              );
+              await sendPhoto(ADMIN_CHAT_ID, best.file_id, `Payment proof from ${username} (Chat ID: ${chatId})`);
             }
           } else {
             console.log("WARNING: ADMIN_CHAT_ID not set; cannot forward paid request.");
           }
 
           clearState(chatId);
-          await sendTelegram(chatId, "Perfect ✅ I’ve got everything. I’ll confirm with you here on Telegram shortly.", mainMenu);
+          await sendTelegram(
+            chatId,
+            "Perfect ✅ I’ve got everything. I’ll confirm with you here on Telegram shortly.",
+            mainMenu
+          );
           return;
         }
       }
