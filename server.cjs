@@ -12,41 +12,25 @@ const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 const WA_NUMBER = "447445328647";
 const wa = (msg) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 
-// ====== Tribute links (provided) ======
-const TRIBUTE_CREATOR_PAGE_URL = "https://t.me/tribute/app?startapp=esF"; // kept for reference, not in menu now
-const TRIBUTE_CUSTOM_URL = "https://t.me/tribute/app?startapp=pqJV";
-const TRIBUTE_VIDEO_CALL_URL = "https://t.me/tribute/app?startapp=pqJS";
+// ====== Tribute links (updated) ======
+// (Creator page kept for reference)
+const TRIBUTE_CREATOR_PAGE_URL = "https://t.me/tribute/app?startapp=esF";
 
-// ✅ NEW: Full XXX Access (top menu)
-const TRIBUTE_FULL_XXX_ACCESS_URL = "https://t.me/tribute/app?startapp=prYo";
+// ✅ Full Access (Top menu)
+const TRIBUTE_FULL_ACCESS_ANNUAL_URL = "https://t.me/tribute/app?startapp=prYo"; // assumed annual (was previously "Full XXX Access")
+const TRIBUTE_FULL_ACCESS_MONTHLY_URL = "https://t.me/tribute/app?startapp=sMLY"; // provided by you
 
-// ====== Telegram Channels submenu ======
-const telegramChannelsMenu = {
-  inline_keyboard: [
-    [{ text: "SFW Channel", url: "https://t.me/jackstackedupdates" }],
-    [{ text: "NSFW Channel", url: "https://t.me/jackstackedofficial" }],
-    [{ text: "Coaching Channel", url: "https://t.me/jackedstackedcoaching" }],
-    [{ text: "Back to Main Menu", callback_data: "menu_main" }]
-  ]
-};
+// ✅ Direct links from top menu
+const TRIBUTE_CUSTOM_URL = "https://t.me/tribute/app?startapp=pqJV"; // custom videos
+const TRIBUTE_VIDEO_CALL_URL = "https://t.me/tribute/app?startapp=pqJS"; // video calls
 
-// ====== Video Calls & Custom Videos submenu (Tribute) ======
-const bookingMenu = {
-  inline_keyboard: [
-    [{ text: "💳 Pay: Video Call", url: TRIBUTE_VIDEO_CALL_URL }],
-    [{ text: "💳 Pay: Custom", url: TRIBUTE_CUSTOM_URL }],
-    [{ text: "✅ I’ve paid (send details)", callback_data: "paid_start" }],
-    [{ text: "Back to Main Menu", callback_data: "menu_main" }]
-  ]
-};
+// ✅ Payments submenu top option
+const TRIBUTE_PAY_VIA_TELEGRAM_URL = "https://t.me/tribute/app?startapp=d7KK";
 
-const paidTypeMenu = {
-  inline_keyboard: [
-    [{ text: "📞 Video Call", callback_data: "paid_type_videocall" }],
-    [{ text: "🎥 Custom Video", callback_data: "paid_type_custom" }],
-    [{ text: "⬅️ Back", callback_data: "menu_booking" }]
-  ]
-};
+// ====== Free Telegram Updates channel (clean PG-13) ======
+// Using your existing "SFW Channel" link as the new free updates channel.
+// Change this if your new free channel username differs.
+const FREE_UPDATES_CHANNEL_URL = "https://t.me/jackstackedupdates";
 
 // ====== Simple in-memory state for the paid flow ======
 const userState = new Map(); // chatId -> { step, data }
@@ -54,27 +38,43 @@ const setState = (chatId, s) => userState.set(String(chatId), s);
 const getState = (chatId) => userState.get(String(chatId));
 const clearState = (chatId) => userState.delete(String(chatId));
 
-// Menus
+// ====== Paid details capture flow (kept; now launched from main menu) ======
+const paidTypeMenu = {
+  inline_keyboard: [
+    [{ text: "📞 Video Call", callback_data: "paid_type_videocall" }],
+    [{ text: "🎥 Custom Video", callback_data: "paid_type_custom" }],
+    [{ text: "⬅️ Back", callback_data: "menu_main" }]
+  ]
+};
+
+// ====== Menus ======
 const mainMenu = {
   inline_keyboard: [
-    // ✅ NEW TOP BUTTON: Full XXX Access
-    [{ text: "🔥 Full XXX Access", url: TRIBUTE_FULL_XXX_ACCESS_URL }],
+    // ✅ Top: Full access options
+    [{ text: "🔥 Full Access — Annual", url: TRIBUTE_FULL_ACCESS_ANNUAL_URL }],
+    [{ text: "🔥 Full Access — Monthly", url: TRIBUTE_FULL_ACCESS_MONTHLY_URL }],
 
-    // ✅ Telegram Channels submenu opener
-    [{ text: "Telegram Channels", callback_data: "menu_telegram_channels" }],
+    // ✅ Free updates channel (clean)
+    [{ text: "📢 Free Telegram Channel Updates", url: FREE_UPDATES_CHANNEL_URL }],
 
+    // Existing row
     [
       { text: "VIP OnlyFans", url: "https://onlyfans.com/hugeandhung" },
       { text: "Exclusive Bottom", url: "https://onlyfans.com/jackpowerbottom" }
     ],
     [{ text: "JustForFans", url: "https://justfor.fans/JackStacked" }],
 
-    // ✅ Booking submenu opener (Tribute)
-    [{ text: "Video Calls & Custom Videos", callback_data: "menu_booking" }],
+    // ✅ Direct Tribute links from top menu
+    [{ text: "📹 Video Calls", url: TRIBUTE_VIDEO_CALL_URL }],
+    [{ text: "🎬 Custom Videos", url: TRIBUTE_CUSTOM_URL }],
 
-    // ✅ Meets go to WhatsApp via Meet Me submenu
+    // ✅ Keep paid details capture (no extra pay menus, just send details after paying)
+    [{ text: "✅ I’ve paid (send details)", callback_data: "paid_start" }],
+
+    // Meets (WhatsApp only for meets)
     [{ text: "Meet Me", callback_data: "menu_meetme" }],
 
+    // Payments submenu
     [{ text: "Payments", callback_data: "menu_payments" }]
   ]
 };
@@ -93,6 +93,10 @@ const meetMenu = {
 
 const paymentsMenu = {
   inline_keyboard: [
+    // ✅ NEW TOP OPTION
+    [{ text: "Pay via Telegram", url: TRIBUTE_PAY_VIA_TELEGRAM_URL }],
+
+    // Rest kept the same
     [{ text: "Throne", url: "https://throne.com/jackstacked" }],
     [{ text: "Crypto", callback_data: "menu_crypto" }],
     [{ text: "Gift Card", url: "https://yougotagift.com/shop/en-ae/" }],
@@ -119,12 +123,13 @@ const cryptoAddresses = {
 
 const welcomeText = `WELCOME TO THE JACK STACKED
 
-This is my Telegram app — everything I offer, all in one place. Inside, you can:
-- Explore my exclusive content INSIDE Telegram
-- Find my OnlyFans Pages
-- Book 1-2-1 video calls with me
+This is my Telegram hub — everything I offer, all in one place. Inside, you can:
+- Join my FREE Telegram updates channel (PG-13)
+- Get full access (Monthly or Annual)
+- Find my OnlyFans pages
+- Book video calls or custom videos
 - Arrange to meet me in person where available
-- Send me a Gift to show your support
+- Send a gift / support via payments
 
 Choose where you want to go next:`;
 
@@ -232,26 +237,6 @@ app.post("/webhook", (req, res) => {
           clearState(chatId);
           await sendTelegram(chatId, welcomeText, mainMenu);
 
-        } else if (data === "menu_telegram_channels") {
-          clearState(chatId);
-          await sendTelegram(
-            chatId,
-            "TELEGRAM CHANNELS\n\n" +
-              "Join either channel below.\n\n" +
-              "✅ Premium *Paid* Channel (ALL content) can be joined from inside *either* the SFW or NSFW channel.\n" +
-              "Once you’re in, follow the pinned instructions to upgrade.\n\n" +
-              "Choose a channel:",
-            telegramChannelsMenu
-          );
-
-        } else if (data === "menu_booking") {
-          clearState(chatId);
-          await sendTelegram(
-            chatId,
-            "VIDEO CALLS & CUSTOM VIDEOS\n\n1) Pay on Tribute\n2) Come back here\n3) Tap ✅ *I’ve paid* and send details\n\n(WhatsApp is for meets only.)",
-            bookingMenu
-          );
-
         } else if (data === "menu_meetme") {
           clearState(chatId);
           await sendTelegram(chatId, "MEET ME\n\nChoose an option below:", meetMenu);
@@ -278,7 +263,7 @@ app.post("/webhook", (req, res) => {
             }
           );
 
-          // ===== PAID FLOW =====
+        // ===== PAID FLOW (send details after paying) =====
         } else if (data === "paid_start") {
           setState(chatId, { step: "choose_type", data: {} });
           await sendTelegram(chatId, "What did you pay for?", paidTypeMenu);
