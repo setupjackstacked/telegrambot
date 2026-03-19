@@ -105,6 +105,119 @@ Choose where you want to go next:`;
 
 const startNudgeText = `🔥 Most people start with Full Access — it’s the best way to unlock the full experience straight away.`;
 
+// ====== FAQ REPLIES ======
+const faqReplies = {
+  offer: `I offer a premium members-only experience with full access to a huge content library, weekly new drops, regular live streams, and direct interaction.
+
+The main page gives you the full experience, while the secondary page is more niche and exclusive. If you want something more personalised, custom content and private calls are available as premium upgrades.
+
+If you want the best place to start, the main page is the move.`,
+
+  price: `The subscription gives you full access to the page, and if you want something more personalised, custom content starts at $300 for 10 minutes and private calls start at $200 for 10 minutes.
+
+If you want the full experience, start with the main page and then upgrade from there.`,
+
+  custom: `Yes — custom content starts at $300 for 10 minutes and is tailored to what you’re looking for.
+
+If you already know what you want, tap 🎬 Custom Videos in the menu and then send your details once you’ve paid.`,
+
+  calls: `Yes — private calls start at $200 for 10 minutes.
+
+If you want something more direct and personalised than the page itself, tap 📹 Video Calls in the menu and book from there.`,
+
+  secondPage: `The second page is more niche and exclusive, with 100+ full-length scenes you won’t find on the main page.
+
+If you already like the main page and want something more specific, that’s where you go next.`,
+
+  live: `I go live 4 times a week (Dubai time):
+
+• Tuesday — 6:00 AM
+• Thursday — 11:00 PM
+• Sunday — 1:00 AM
+• Sunday — 6:00 PM
+
+If you want the full experience, the main page is the best place to start.`,
+
+  payments: `You can pay directly through Telegram, Throne, crypto, or gift card.
+
+Tap *Payments* in the menu below and choose the option that works best for you.`,
+
+  menu: `Use the menu below 👇 to access everything — full access, exclusive pages, custom videos, private calls, payments, and more.`
+};
+
+function detectFaqIntent(text = "") {
+  const t = text.toLowerCase().trim();
+
+  if (
+    t.includes("what do you offer") ||
+    t.includes("what do u offer") ||
+    t.includes("what do i get") ||
+    t.includes("what's on there") ||
+    t.includes("whats on there") ||
+    t.includes("what is on there") ||
+    t.includes("what do you have")
+  ) return "offer";
+
+  if (
+    t.includes("how much") ||
+    t.includes("price") ||
+    t.includes("prices") ||
+    t.includes("pricing") ||
+    t.includes("cost") ||
+    t.includes("how much is it") ||
+    t.includes("what does it cost")
+  ) return "price";
+
+  if (
+    t.includes("custom") ||
+    t.includes("customs") ||
+    t.includes("custom video") ||
+    t.includes("personalised") ||
+    t.includes("personalized")
+  ) return "custom";
+
+  if (
+    t.includes("video call") ||
+    t.includes("private call") ||
+    t.includes("call") ||
+    t.includes("calls") ||
+    t.includes("book a call")
+  ) return "calls";
+
+  if (
+    t.includes("second page") ||
+    t.includes("bottom page") ||
+    t.includes("exclusive bottom") ||
+    t.includes("other page") ||
+    t.includes("bottom content")
+  ) return "secondPage";
+
+  if (
+    t.includes("live") ||
+    t.includes("live stream") ||
+    t.includes("livestream") ||
+    t.includes("schedule") ||
+    t.includes("when are you live")
+  ) return "live";
+
+  if (
+    t.includes("payment") ||
+    t.includes("pay") ||
+    t.includes("how do i pay") ||
+    t.includes("how to pay") ||
+    t.includes("crypto") ||
+    t.includes("gift card")
+  ) return "payments";
+
+  if (
+    t === "menu" ||
+    t.includes("main menu") ||
+    t.includes("show menu")
+  ) return "menu";
+
+  return null;
+}
+
 // Telegram helpers
 async function sendTelegram(chatId, text, keyboard) {
   if (!BOT_TOKEN) {
@@ -261,7 +374,8 @@ app.post("/webhook", (req, res) => {
         const chatId = message.chat.id;
 
         if (message.text) {
-          const text = message.text.trim().toLowerCase();
+          const textRaw = message.text.trim();
+          const text = textRaw.toLowerCase();
 
           if (text === "/start" || text === "start") {
             clearState(chatId);
@@ -273,7 +387,17 @@ app.post("/webhook", (req, res) => {
 
         const st = getState(chatId);
 
-        // ===== FALLBACK REPLY FOR RANDOM TEXT =====
+        // ===== FAQ LAYER =====
+        if (!st && message.text) {
+          const intent = detectFaqIntent(message.text);
+
+          if (intent) {
+            await sendTelegram(chatId, faqReplies[intent], mainMenu);
+            return;
+          }
+        }
+
+        // ===== FALLBACK REPLY =====
         if (!st && message.text) {
           await sendTelegram(
             chatId,
