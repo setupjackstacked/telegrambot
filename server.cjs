@@ -380,7 +380,7 @@ app.post("/webhook", (req, res) => {
           if (text === "/start" || text === "start") {
             clearState(chatId);
             await sendTelegram(chatId, welcomeText, mainMenu);
-            await sendTelegram(chatId, startNudgeText, mainMenu);
+            await sendTelegram(chatId, startNudgeText);
             return;
           }
         }
@@ -392,7 +392,8 @@ app.post("/webhook", (req, res) => {
           const intent = detectFaqIntent(message.text);
 
           if (intent) {
-            await sendTelegram(chatId, faqReplies[intent], mainMenu);
+            await sendTelegram(chatId, faqReplies[intent]);
+            await sendTelegram(chatId, "Choose an option below 👇", mainMenu);
             return;
           }
         }
@@ -401,9 +402,9 @@ app.post("/webhook", (req, res) => {
         if (!st && message.text) {
           await sendTelegram(
             chatId,
-            "Use the menu below 👇 to access everything — full access, exclusive pages, custom videos, private calls, payments, and more.",
-            mainMenu
+            "Use the menu below to access everything — full access, exclusive pages, custom videos, private calls, payments, and more."
           );
+          await sendTelegram(chatId, "Choose an option below 👇", mainMenu);
           return;
         }
 
