@@ -4,41 +4,30 @@ const app = express();
 app.use(express.json());
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-
-// ✅ Admin chat id (your personal Telegram user id) for forwarding paid requests
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 
-// ====== CONFIG HELPERS (prevents future mistakes) ======
+// ====== CONFIG HELPERS ======
 const WA_NUMBER = "447445328647";
 const wa = (msg) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 
-// ====== Tribute links (updated) ======
-// (Creator page kept for reference)
+// ====== Tribute links ======
 const TRIBUTE_CREATOR_PAGE_URL = "https://t.me/tribute/app?startapp=esF";
-
-// ✅ Full Access (Top menu)
-const TRIBUTE_FULL_ACCESS_ANNUAL_URL = "https://t.me/tribute/app?startapp=prYo"; // assumed annual (was previously "Full XXX Access")
-const TRIBUTE_FULL_ACCESS_MONTHLY_URL = "https://t.me/tribute/app?startapp=sMLY"; // provided by you
-
-// ✅ Direct links from top menu
-const TRIBUTE_CUSTOM_URL = "https://t.me/tribute/app?startapp=pqJV"; // custom videos
-const TRIBUTE_VIDEO_CALL_URL = "https://t.me/tribute/app?startapp=pqJS"; // video calls
-
-// ✅ Payments submenu top option
+const TRIBUTE_FULL_ACCESS_ANNUAL_URL = "https://t.me/tribute/app?startapp=prYo";
+const TRIBUTE_FULL_ACCESS_MONTHLY_URL = "https://t.me/tribute/app?startapp=sMLY";
+const TRIBUTE_CUSTOM_URL = "https://t.me/tribute/app?startapp=pqJV";
+const TRIBUTE_VIDEO_CALL_URL = "https://t.me/tribute/app?startapp=pqJS";
 const TRIBUTE_PAY_VIA_TELEGRAM_URL = "https://t.me/tribute/app?startapp=d7KK";
 
-// ====== Free Telegram Updates channel (clean PG-13) ======
-// Using your existing "SFW Channel" link as the new free updates channel.
-// Change this if your new free channel username differs.
+// ====== Free Telegram Updates channel ======
 const FREE_UPDATES_CHANNEL_URL = "https://t.me/jackstackedupdates";
 
 // ====== Simple in-memory state for the paid flow ======
-const userState = new Map(); // chatId -> { step, data }
+const userState = new Map();
 const setState = (chatId, s) => userState.set(String(chatId), s);
 const getState = (chatId) => userState.get(String(chatId));
 const clearState = (chatId) => userState.delete(String(chatId));
 
-// ====== Paid details capture flow (kept; now launched from main menu) ======
+// ====== Paid details capture flow ======
 const paidTypeMenu = {
   inline_keyboard: [
     [{ text: "📞 Video Call", callback_data: "paid_type_videocall" }],
@@ -50,31 +39,18 @@ const paidTypeMenu = {
 // ====== Menus ======
 const mainMenu = {
   inline_keyboard: [
-    // ✅ Top: Full access options
     [{ text: "🔥 Full Access — Annual", url: TRIBUTE_FULL_ACCESS_ANNUAL_URL }],
     [{ text: "🔥 Full Access — Monthly", url: TRIBUTE_FULL_ACCESS_MONTHLY_URL }],
-
-    // ✅ Free updates channel (clean)
     [{ text: "📢 Free Telegram Channel Updates", url: FREE_UPDATES_CHANNEL_URL }],
-
-    // Existing row
     [
       { text: "VIP OnlyFans", url: "https://onlyfans.com/hugeandhung" },
       { text: "Exclusive Bottom", url: "https://onlyfans.com/jackpowerbottom" }
     ],
     [{ text: "JustForFans", url: "https://justfor.fans/JackStacked" }],
-
-    // ✅ Direct Tribute links from top menu
     [{ text: "📹 Video Calls", url: TRIBUTE_VIDEO_CALL_URL }],
     [{ text: "🎬 Custom Videos", url: TRIBUTE_CUSTOM_URL }],
-
-    // ✅ Keep paid details capture (no extra pay menus, just send details after paying)
     [{ text: "✅ I’ve paid (send details)", callback_data: "paid_start" }],
-
-    // Meets (WhatsApp only for meets)
     [{ text: "Meet Me", callback_data: "menu_meetme" }],
-
-    // Payments submenu
     [{ text: "Payments", callback_data: "menu_payments" }]
   ]
 };
@@ -82,10 +58,7 @@ const mainMenu = {
 const meetMenu = {
   inline_keyboard: [
     [{ text: "Rentmen", url: "https://rentmen.eu/JackStacked" }],
-
-    // ✅ WhatsApp correct wa.me format for +447445328647 (meets only)
     [{ text: "Make a Booking", url: wa("Telegram Booking Enquiry") }],
-
     [{ text: "Deposits - See Payments", callback_data: "menu_payments" }],
     [{ text: "Back to Main Menu", callback_data: "menu_main" }]
   ]
@@ -93,10 +66,7 @@ const meetMenu = {
 
 const paymentsMenu = {
   inline_keyboard: [
-    // ✅ NEW TOP OPTION
     [{ text: "Pay via Telegram", url: TRIBUTE_PAY_VIA_TELEGRAM_URL }],
-
-    // Rest kept the same
     [{ text: "Throne", url: "https://throne.com/jackstacked" }],
     [{ text: "Crypto", callback_data: "menu_crypto" }],
     [{ text: "Gift Card", url: "https://yougotagift.com/shop/en-ae/" }],
@@ -132,6 +102,101 @@ This is my Telegram hub — everything I offer, all in one place. Inside, you ca
 - Send a gift / support via payments
 
 Choose where you want to go next:`;
+
+// ====== FAQ / sales replies ======
+const faqReplies = {
+  offer: `I offer a premium members-only experience with full access to a huge content library, weekly new drops, regular live streams, and direct interaction.
+
+The main page gives you the full experience, while the secondary page is more niche and exclusive. If you want something more personalised, custom content and private calls are available as premium upgrades.
+
+If you want the best place to start, the main page is the move.`,
+
+  price: `The subscription gives you full access to the page, and if you want something more personalised, custom content starts at $300 for 10 minutes and private calls start at $200 for 10 minutes.
+
+If you want the full experience, start with the main page and then upgrade from there.`,
+
+  secondPage: `The second page is more niche and exclusive, with 100+ full-length scenes you won’t find on the main page.
+
+If you already like the main page and want something more specific, that’s where you go next.`,
+
+  custom: `Yes — custom content starts at $300 for 10 minutes and is tailored to what you’re looking for.
+
+If you already know what you want, tap 🎬 Custom Videos in the menu and then send your details once you’ve paid.`,
+
+  calls: `Yes — private calls start at $200 for 10 minutes.
+
+If you want something more direct and personalised than the page itself, tap 📹 Video Calls in the menu and book from there.`,
+
+  live: `I go live 4 times a week (Dubai time):
+
+• Tuesday — 6:00 AM
+• Thursday — 11:00 PM
+• Sunday — 1:00 AM
+• Sunday — 6:00 PM
+
+If you want the full experience, the main page is the best place to start.`,
+
+  menu: `Use the menu below to choose exactly what you want — full access, the exclusive bottom page, custom videos, private calls, payments, or bookings.`
+};
+
+function detectFaqIntent(text = "") {
+  const t = text.toLowerCase().trim();
+
+  if (
+    t.includes("what do you offer") ||
+    t.includes("what do u offer") ||
+    t.includes("what do i get") ||
+    t.includes("what's on there") ||
+    t.includes("whats on there") ||
+    t.includes("what is on there")
+  ) return "offer";
+
+  if (
+    t.includes("how much") ||
+    t.includes("price") ||
+    t.includes("prices") ||
+    t.includes("pricing") ||
+    t.includes("cost") ||
+    t.includes("how much is it")
+  ) return "price";
+
+  if (
+    t.includes("second page") ||
+    t.includes("bottom page") ||
+    t.includes("exclusive bottom") ||
+    t.includes("other page")
+  ) return "secondPage";
+
+  if (
+    t.includes("custom") ||
+    t.includes("customs") ||
+    t.includes("custom video") ||
+    t.includes("personalised")
+  ) return "custom";
+
+  if (
+    t.includes("video call") ||
+    t.includes("private call") ||
+    t.includes("call") ||
+    t.includes("calls")
+  ) return "calls";
+
+  if (
+    t.includes("live") ||
+    t.includes("live stream") ||
+    t.includes("livestream") ||
+    t.includes("schedule") ||
+    t.includes("when are you live")
+  ) return "live";
+
+  if (
+    t === "menu" ||
+    t.includes("main menu") ||
+    t.includes("show menu")
+  ) return "menu";
+
+  return null;
+}
 
 // Telegram helpers
 async function sendTelegram(chatId, text, keyboard) {
@@ -213,7 +278,6 @@ app.get("/health", (req, res) => res.status(200).send("ok"));
 
 // Webhook endpoint
 app.post("/webhook", (req, res) => {
-  // Respond immediately so Telegram doesn't retry
   res.sendStatus(200);
 
   (async () => {
@@ -263,7 +327,6 @@ app.post("/webhook", (req, res) => {
             }
           );
 
-        // ===== PAID FLOW (send details after paying) =====
         } else if (data === "paid_start") {
           setState(chatId, { step: "choose_type", data: {} });
           await sendTelegram(chatId, "What did you pay for?", paidTypeMenu);
@@ -275,12 +338,9 @@ app.post("/webhook", (req, res) => {
           const prompt =
             type === "Video Call"
               ? "Send in *ONE message*:\n\n• Preferred date/time + timezone\n• Any requests/limits\n\nThen send a screenshot of the Tribute confirmation, or type `skip`."
-              : "Send in *ONE message*:\n\n• What you want (clear scenario)\n• Length/style\n• Any requests/limits\n• Deadline (if any)\n\nThen send a screenshot of the Tribute confirmation, or type `skip`.";
+              : "Send in *ONE message*:\n\n• What you want\n• Length/style\n• Any requests/limits\n• Deadline (if any)\n\nThen send a screenshot of the Tribute confirmation, or type `skip`.";
 
           await sendTelegram(chatId, `Got it: *${type}*.\n\n${prompt}`);
-
-        } else {
-          // Unknown callback — do nothing
         }
 
         return;
@@ -290,21 +350,30 @@ app.post("/webhook", (req, res) => {
       if (message) {
         const chatId = message.chat.id;
 
-        // /start
         if (message.text) {
-          const text = message.text.trim().toLowerCase();
+          const textRaw = message.text.trim();
+          const text = textRaw.toLowerCase();
 
           if (text === "/start" || text === "start") {
             clearState(chatId);
             await sendTelegram(chatId, welcomeText, mainMenu);
             return;
           }
+
+          const st = getState(chatId);
+          if (!st) {
+            const intent = detectFaqIntent(textRaw);
+
+            if (intent) {
+              await sendTelegram(chatId, faqReplies[intent], mainMenu);
+              return;
+            }
+          }
         }
 
         const st = getState(chatId);
         if (!st) return;
 
-        // Step: ask_details (expects text)
         if (st.step === "ask_details") {
           if (!message.text) {
             await sendTelegram(chatId, "Please send the details as text in one message.");
@@ -319,7 +388,6 @@ app.post("/webhook", (req, res) => {
           return;
         }
 
-        // Step: await_proof (accept photo OR "skip")
         if (st.step === "await_proof") {
           const hasPhoto = Array.isArray(message.photo) && message.photo.length > 0;
           const isSkip =
