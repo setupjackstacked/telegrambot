@@ -6,82 +6,73 @@ app.use(express.json());
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 // ====== CONFIG HELPERS ======
-const WA_NUMBER = "447445328647";
-const wa = (msg) => `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+const WA_LINK = "https://wa.me/message/V36UBNCW23B7E1";
 
-// ====== Tribute links ======
-const TRIBUTE_CREATOR_PAGE_URL = "https://t.me/tribute/app?startapp=esF";
-const TRIBUTE_FULL_ACCESS_MONTHLY_URL = "https://t.me/tribute/app?startapp=sMLY";
-
-// ====== Free Telegram Updates channel ======
+// ====== LINKS ======
+const VIP_BOT_URL = "https://t.me/jackstackedpaybot";
+const TRIBUTE_URL = "https://t.me/tribute/app?startapp=esF";
 const FREE_UPDATES_CHANNEL_URL = "https://t.me/jackstackedupdates";
 
-// ====== Menus ======
+// ====== MENUS ======
 const mainMenu = {
   inline_keyboard: [
-    [{ text: "🔥 Full Access — Monthly", url: TRIBUTE_FULL_ACCESS_MONTHLY_URL }],
-    [{ text: "📢 Free Telegram Channel Updates", url: FREE_UPDATES_CHANNEL_URL }],
+    [{ text: "🔓 Unlock VIP Channel", url: VIP_BOT_URL }],
+    [{ text: "📢 Free Telegram Updates", url: FREE_UPDATES_CHANNEL_URL }],
     [
       { text: "VIP OnlyFans", url: "https://onlyfans.com/hugeandhung" },
       { text: "Exclusive Bottom", url: "https://onlyfans.com/jackpowerbottom" }
     ],
     [{ text: "JustForFans", url: "https://justfor.fans/JackStacked" }],
-    [{ text: "Meet Me", callback_data: "menu_meetme" }]
+    [{ text: "Meet Me", callback_data: "menu_meetme" }],
+    [{ text: "💳 Make Payments", url: TRIBUTE_URL }]
   ]
 };
 
 const meetMenu = {
   inline_keyboard: [
-    [{ text: "Rentmen", url: "https://rentmen.eu/JackStacked" }],
-    [{ text: "Make a Booking", url: wa("Telegram Booking Enquiry") }],
-    [{ text: "Pay Deposit via Tribute", url: TRIBUTE_CREATOR_PAGE_URL }],
+    [{ text: "RentMen", url: "https://rentmen.eu/JackStacked" }],
+    [{ text: "WhatsApp Booking", url: WA_LINK }],
     [{ text: "Back to Main Menu", callback_data: "menu_main" }]
   ]
 };
 
 const welcomeText = `WELCOME TO THE JACK STACKED
 
-This is my Telegram hub — everything I offer, all in one place. Inside, you can:
+This is my Telegram hub — everything in one place.
+
+Inside, you can:
 - Join my FREE Telegram updates channel (PG-13)
-- Get full access (Monthly)
+- Unlock my VIP channel with full content access
 - Find my OnlyFans pages
-- Arrange to meet me in person where available
-- Pay securely via Tribute on Telegram
+- Arrange to meet me in person
 
 Choose where you want to go next:`;
 
-const startNudgeText = `🔥 Most people start with Full Access — it’s the best way to unlock the full experience straight away.`;
+const startNudgeText = `🔥 Most people unlock the VIP channel first — that’s where the full experience is.`;
 
 // ====== FAQ REPLIES ======
 const faqReplies = {
-  offer: `I offer a premium members-only experience with full access to a huge content library, weekly new drops, regular live streams, and direct interaction.
+  offer: `I offer a VIP members-only experience with full access to my content, regular drops, and exclusive material you won’t see anywhere else.
 
-The main page gives you the full experience, while the secondary page is more niche and exclusive.
+If you want everything in one place, unlocking the VIP channel is the best move.`,
 
-If you want the best place to start, the main page is the move.`,
+  price: `Full access is handled through the VIP channel.
 
-  price: `The subscription gives you full access to the page through the monthly Tribute option.
+Unlock it using the button below to get started instantly.`,
 
-If you want the full experience, start with the main page from the menu below.`,
+  secondPage: `The second page is more niche and exclusive, with content you won’t find on the main page.
 
-  secondPage: `The second page is more niche and exclusive, with 100+ full-length scenes you won’t find on the main page.
+If you already like the main content and want something more specific, that’s where you go next.`,
 
-If you already like the main page and want something more specific, that’s where you go next.`,
+  live: `I go live regularly inside the VIP ecosystem.
 
-  live: `I go live 4 times a week (Dubai time):
+If you want full access, unlocking the VIP channel is the best place to start.`,
 
-• Tuesday — 6:00 AM
-• Thursday — 11:00 PM
-• Sunday — 1:00 AM
-• Sunday — 6:00 PM
+  payments: `All payments are handled securely through Telegram.
 
-If you want the full experience, the main page is the best place to start.`,
+Use the *Make Payments* button in the menu below.`,
 
-  payments: `All payments are handled securely through Tribute on Telegram.
-
-Choose what you want from the menu below and complete payment there.`,
-
-  menu: `Use the menu below 👇 to access everything — full access, exclusive pages, Telegram updates, and meet bookings.`
+  menu: `Use the menu below 👇 to access everything — VIP channel, content, updates, and bookings.`
 };
 
 function detectFaqIntent(text = "") {
@@ -89,63 +80,42 @@ function detectFaqIntent(text = "") {
 
   if (
     t.includes("what do you offer") ||
-    t.includes("what do u offer") ||
     t.includes("what do i get") ||
     t.includes("what's on there") ||
-    t.includes("whats on there") ||
-    t.includes("what is on there") ||
     t.includes("what do you have")
   ) return "offer";
 
   if (
-    t.includes("how much") ||
     t.includes("price") ||
-    t.includes("prices") ||
-    t.includes("pricing") ||
     t.includes("cost") ||
-    t.includes("how much is it") ||
-    t.includes("what does it cost")
+    t.includes("how much")
   ) return "price";
 
   if (
-    t.includes("second page") ||
-    t.includes("bottom page") ||
-    t.includes("exclusive bottom") ||
-    t.includes("other page") ||
-    t.includes("bottom content")
+    t.includes("bottom") ||
+    t.includes("second page")
   ) return "secondPage";
 
   if (
     t.includes("live") ||
-    t.includes("live stream") ||
-    t.includes("livestream") ||
-    t.includes("schedule") ||
-    t.includes("when are you live")
+    t.includes("schedule")
   ) return "live";
 
   if (
-    t.includes("payment") ||
     t.includes("pay") ||
-    t.includes("how do i pay") ||
-    t.includes("how to pay") ||
-    t.includes("tribute")
+    t.includes("payment")
   ) return "payments";
 
   if (
-    t === "menu" ||
-    t.includes("main menu") ||
-    t.includes("show menu")
+    t.includes("menu")
   ) return "menu";
 
   return null;
 }
 
-// Telegram helpers
+// ====== TELEGRAM HELPERS ======
 async function sendTelegram(chatId, text, keyboard) {
-  if (!BOT_TOKEN) {
-    console.log("ERROR: TELEGRAM_BOT_TOKEN is missing");
-    return;
-  }
+  if (!BOT_TOKEN) return;
 
   try {
     const payload = {
@@ -157,16 +127,11 @@ async function sendTelegram(chatId, text, keyboard) {
 
     if (keyboard) payload.reply_markup = keyboard;
 
-    const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
-
-    if (!resp.ok) {
-      const t = await resp.text();
-      console.log("Telegram sendMessage failed:", resp.status, t);
-    }
   } catch (err) {
     console.log("Send error:", err);
   }
@@ -176,40 +141,27 @@ async function answerCallback(id) {
   if (!BOT_TOKEN) return;
 
   try {
-    const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ callback_query_id: id })
     });
-
-    if (!resp.ok) {
-      const t = await resp.text();
-      console.log("Telegram answerCallbackQuery failed:", resp.status, t);
-    }
   } catch (err) {
     console.log("Callback error:", err);
   }
 }
 
-// Health checks
+// ====== ROUTES ======
 app.get("/", (req, res) => res.status(200).send("ok"));
 app.get("/health", (req, res) => res.status(200).send("ok"));
 
-// Webhook endpoint
 app.post("/webhook", (req, res) => {
   res.sendStatus(200);
 
   (async () => {
     try {
       const { message, callback_query } = req.body;
-      console.log("Update received:", JSON.stringify(req.body).slice(0, 500));
 
-      if (!BOT_TOKEN) {
-        console.log("ERROR: TELEGRAM_BOT_TOKEN is missing in deployment env");
-        return;
-      }
-
-      // ===== CALLBACKS =====
       if (callback_query) {
         const chatId = callback_query.message.chat.id;
         const data = callback_query.data;
@@ -218,15 +170,15 @@ app.post("/webhook", (req, res) => {
 
         if (data === "menu_main") {
           await sendTelegram(chatId, welcomeText, mainMenu);
+        }
 
-        } else if (data === "menu_meetme") {
+        if (data === "menu_meetme") {
           await sendTelegram(chatId, "MEET ME\n\nChoose an option below:", meetMenu);
         }
 
         return;
       }
 
-      // ===== MESSAGES =====
       if (message) {
         const chatId = message.chat.id;
 
@@ -238,10 +190,7 @@ app.post("/webhook", (req, res) => {
             await sendTelegram(chatId, startNudgeText);
             return;
           }
-        }
 
-        // ===== FAQ LAYER =====
-        if (message.text) {
           const intent = detectFaqIntent(message.text);
 
           if (intent) {
@@ -249,27 +198,22 @@ app.post("/webhook", (req, res) => {
             await sendTelegram(chatId, "Choose an option below 👇", mainMenu);
             return;
           }
-        }
 
-        // ===== FALLBACK REPLY =====
-        if (message.text) {
           await sendTelegram(
             chatId,
-            "Use the menu below to access everything — full access, exclusive pages, Telegram updates, and meet bookings."
+            "Use the menu below to access everything — VIP channel, content, updates, and bookings."
           );
           await sendTelegram(chatId, "Choose an option below 👇", mainMenu);
         }
       }
     } catch (err) {
-      console.log("Webhook handler error:", err);
+      console.log("Webhook error:", err);
     }
   })();
 });
 
-// IMPORTANT: listen on Railway's PORT
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("Listening on port:", PORT);
-  console.log("TOKEN SET:", Boolean(process.env.TELEGRAM_BOT_TOKEN));
 });
